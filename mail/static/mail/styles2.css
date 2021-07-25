@@ -1,0 +1,21 @@
+textarea {
+    min-height: 400px;
+}
+@keyframes appears{	
+	from {opacity: 0;}
+	to {opacity: 1;}
+}
+div {
+	border-style: solid;
+	border: 1px solid;
+	border-collapse: collapse;
+	border-color: blue;
+}
+.allMails{
+	animation-name: appears;
+	animation-duration: 2s;
+	animation-fill-mode: forwards;	
+	animation-play-state: paused;
+}
+
+

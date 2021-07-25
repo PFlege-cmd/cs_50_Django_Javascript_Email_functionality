@@ -1,0 +1,223 @@
+document.addEventListener('DOMContentLoaded', function() {
+
+
+  // Use buttons to toggle between views
+  document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
+  document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
+  document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
+  document.querySelector('#compose').addEventListener('click', compose_email);
+  //document.querySelector('#compose').onclick = function () {alert("Hey")};
+
+  // By default, load the inbox
+  load_mailbox('inbox');
+  
+  
+});
+
+function compose_email() {
+	const click = document.createEvent('Event');
+	click.initEvent('click', true, true);
+
+  // Show compose view and hide other views
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#compose-view').style.display = 'block';
+
+  // Clear out composition fields
+  document.querySelector('#compose-recipients').value = '';
+  document.querySelector('#compose-subject').value = '';
+  document.querySelector('#compose-body').value = '';
+  
+  
+  document.querySelector('#compose-form').onsubmit = function (){
+		alert("pressed");
+		let msg_recipient = document.querySelector('#compose-recipients').value;
+		let msg_subject = document.querySelector('#compose-subject').value;
+		let msg_text = document.querySelector('#compose-body').value;
+		if (msg_recipient.length === 0 || msg_subject.length === 0 || msg_text === 0){
+		alert("Fields must not be empty!");
+		} else {
+		 alert("Recipient: " + msg_recipient + ", subject: " + msg_text);
+		 fetch('/emails', {
+			 method : "post",
+			 body : JSON.stringify({
+				 recipients: msg_recipient,
+				 subject: msg_subject,
+				 body: msg_text
+			 })
+		 })
+		 .then(r => r.json())
+		 .then(result => {
+			 console.log(result);
+		 }).catch(error => console.log(error + Date.now()));
+		}
+		document.querySelector('#sent').click();
+		return false;
+		
+  };
+	  
+
+  
+}
+
+function load_mailbox(mailbox) {
+  
+  // Show the mailbox and hide other views
+  document.querySelector('#emails-view').style.display = 'block';
+  document.querySelector('#compose-view').style.display = 'none';
+
+  // Show the mailbox name
+  document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+  
+  
+
+	  myObj = fetch('/emails/' + mailbox)
+	  .then(response => {return response.json()})
+	  .then(emails => {emails.forEach(email => 
+		{
+			
+		
+			div = makeDivision(email);
+			
+			if (mailbox === 'inbox'){
+				openButton = document.createElement("button");
+				
+				openButton.style.textContent = "Open";
+				openButton.style.width = "75px";
+				openButton.style.height = "35px";
+				openButton.style.bottom = "50px";
+				openButton.style.backgroundColor = "white";
+				openButton.className = "btn btn-sm btn-outline-primary";
+				
+				div.appendChild(openButton);
+				div = changeBackgroundIfRead(div, email);
+				
+			}
+			
+			if (email.read === true){
+				div.style.backgroundColor = 'grey';
+				
+			} else {
+				div.style.backgroundColor = 'blue';		
+			}
+			
+			document.querySelector('#emails-view').appendChild(div);
+			//emails_view.appendChild(div);
+			
+	  });
+	  return emails;})
+	  .catch(error => console.log(error));
+	  
+	  console.log(myObj);
+  
+  
+    
+}
+
+const makeDivision = function (email){
+	
+	console.log(email);
+	
+	div = document.createElement("div");
+	div.className = "allMails";
+			
+	// Create paragraphs for division
+	p_from = document.createElement("p");
+	p_from.innerText = `From: ${email.sender}`;
+	
+	p_subj = document.createElement("p");
+	p_subj.innerText = `Subject: ${email.subject}`;
+	
+	p_time = document.createElement("p");
+	p_time.innerText = `Timestamp: ${email.timestamp}`;
+	
+	div.append(p_from);
+	div.append(p_subj);
+	div.append(p_time);
+			
+	
+	return div;
+}
+
+const changeBackgroundIfRead = function (div, email){
+	console.log(email);
+	
+	b = div.querySelector('button')
+	b.addEventListener('click', function(event){getEmail(email);});
+	//div.addEventListener('hover', function(){console.log("You hovered over a division!");});
+	
+	console.log(div);
+	
+	return div;
+	
+}
+
+const changeStatus = function(email){
+	
+	fetch(`/emails/${email.id}`, {
+		method : "put",
+		body : JSON.stringify({
+			read : true
+		})
+	}).then(r => r.json())
+	.catch(error => {});
+
+	
+}
+
+const getEmail = function(email){
+	
+	alert(event.target);
+	
+	event.target.parentElement.className = "clicked";
+	
+	fetch(`/emails/${email.id}`)
+	.then(r => r.json())
+	.then(email => {		
+		
+		test = document.querySelectorAll('.allMails');
+		
+		test.forEach(div => {
+		console.log(div);
+		if (div != this){
+			div.innerHTML = '';
+		}
+		});
+		
+		event.target.parentElement.style.animationPlayState = "running";
+		console.log(event.target.parentElement.style.animationPlayState);
+		
+		
+		/*
+		document.querySelector('#emails-view').innerHTML = '';
+		document.querySelector('#compose-view').style.display = 'none';
+		
+		sender = document.createElement("h2");
+		sender.innerHTML = `From: ${email.sender}`;
+		
+		receivers = document.createElement("h2");
+		receivers.innerHTML = `To: ${email.recipients}`;
+		
+		subject = document.createElement("h2")
+		subject.innerHTML = `Subject: ${email.subject}`;
+		
+		content_div = document.createElement("div");
+		
+		//content_div.className = "allMails";
+		
+		content = document.createElement("p");
+		content.innerHTML = `${email.body}`;
+		
+		content_div.appendChild(content);
+		
+		document.querySelector('#emails-view').appendChild(sender);
+		document.querySelector('#emails-view').appendChild(receivers);
+		document.querySelector('#emails-view').appendChild(subject);
+		document.querySelector('#emails-view').appendChild(content_div);
+		*/
+		
+	})
+	.catch(error => {});
+	if (email.read === false){
+		changeStatus(email);
+	}
+}
